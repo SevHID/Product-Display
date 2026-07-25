@@ -1,0 +1,6 @@
+商品名称：Samsung Galaxy S24 Ultra
+图片链接：https://picsum.photos/seed/samsung/400/300
+商品介绍：AI 智能手机，Galaxy AI 赋能，S Pen 内置，2 亿像素相机，超亮屏幕，全天续航。
+视频链接：https://www.bilibili.com/video/BV1wC4y1B7JX
+商品分类：手机
+价格：¥9699

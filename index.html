@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#6c63ff">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+    <title>商品预览</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 轮播区域 -->
+    <section id="carousel-container"></section>
+
+    <!-- 搜索 + 筛选 + 排序 区域 -->
+    <section id="search-section">
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="输入商品名称搜索..." />
+            <select id="category-select">
+                <option value="">全部分类</option>
+            </select>
+            <select id="sort-select">
+                <option value="default">默认排序</option>
+                <option value="name_asc">名称 A → Z</option>
+                <option value="name_desc">名称 Z → A</option>
+            </select>
+            <button id="search-btn">搜索</button>
+            <button id="clear-btn">清空</button>
+        </div>
+        <div id="suggestions" class="suggestions-box"></div>
+        <div id="search-tip"></div>
+    </section>
+
+    <!-- 商品列表 -->
+    <section id="product-list"></section>
+
+    <!-- 加载更多 -->
+    <div id="load-more-container">
+        <button id="load-more-btn" class="load-more-btn">加载更多</button>
+        <p id="load-more-info"></p>
+    </div>
+
+    <!-- ===== 商品详情弹窗 (Modal) ===== -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <img id="modal-image" src="" alt="商品图片">
+            <h2 id="modal-name"></h2>
+            <p id="modal-category" class="modal-category"></p>
+            <p id="modal-description"></p>
+            <a id="modal-video" href="#" target="_blank" class="modal-video-btn">▶ 观看介绍视频</a>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

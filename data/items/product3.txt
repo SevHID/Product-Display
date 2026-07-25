@@ -1,0 +1,6 @@
+商品名称：Sony WH-1000XM5
+图片链接：https://picsum.photos/seed/sony/400/300
+商品介绍：旗舰级降噪耳机，AI 降噪技术，长达 30 小时续航，佩戴舒适，音质卓越。
+视频链接：https://www.bilibili.com/video/BV1dS4y1X7mN
+商品分类：耳机
+价格：¥1999
