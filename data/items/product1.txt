@@ -1,6 +1,6 @@
 商品名称：iPhone 15 Pro
 图片链接：https://picsum.photos/seed/iphone/400/300
 商品介绍：搭载 A17 Pro 芯片，钛金属边框，4800 万像素主摄，支持 USB-C 接口。带来前所未有的性能和摄影体验。
-视频链接：https://www.bilibili.com/video/BV1Gj411h7kH
+视频链接：
 商品分类：手机
 价格：¥7999
