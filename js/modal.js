@@ -17,8 +17,8 @@ const verifyHistory = document.getElementById('verify-history');
 const historyList = document.getElementById('history-list');
 
 // ========== Cloudflare Worker 配置 ==========
-// ⚠️ 替换为你的 Worker 地址（部署后获得）
-const WORKER_URL = 'https://verify-log-writer.shikurei77.workers.dev/';
+// ⚠️ 替换为你的 Worker 地址
+const WORKER_URL = 'https://verify-log-writer.shikurei77.workers.dev';
 // ============================================
 
 // ========== 弹窗控制 ==========
@@ -40,22 +40,18 @@ export function openModal(product) {
         }
     }
 
-    const hasAntiFake = product.antiFakeCodes && product.antiFakeCodes.length > 0;
+    // 所有商品都显示验证区域（验证逻辑在 Worker 中，不依赖前端数据）
     if (verificationArea) {
-        if (hasAntiFake) {
-            verificationArea.style.display = 'block';
-            if (verificationInput) {
-                verificationInput.value = '';
-                verificationInput.placeholder = '请输入防伪码';
-            }
-            if (verificationResult) {
-                verificationResult.textContent = '';
-                verificationResult.style.color = '';
-            }
-            if (verifyHistory) verifyHistory.style.display = 'none';
-        } else {
-            verificationArea.style.display = 'none';
+        verificationArea.style.display = 'block';
+        if (verificationInput) {
+            verificationInput.value = '';
+            verificationInput.placeholder = '请输入防伪码';
         }
+        if (verificationResult) {
+            verificationResult.textContent = '';
+            verificationResult.style.color = '';
+        }
+        if (verifyHistory) verifyHistory.style.display = 'none';
     }
 
     if (overlay) overlay.classList.add('active');
@@ -100,7 +96,7 @@ function markTodayRecorded(code) {
     localStorage.setItem(key, getTodayKey());
 }
 
-// ========== 通过 Worker 读取所有验证记录 ==========
+// ========== 从 Worker 读取所有验证记录 ==========
 async function fetchAllVerifyLogs() {
     try {
         const response = await fetch(WORKER_URL);
@@ -164,8 +160,28 @@ function renderHistory(records, targetCode) {
     verifyHistory.style.display = 'block';
 }
 
-// ========== 通过 Worker 写入记录（每日首次） ==========
-async function writeVerifyLog(code, productName) {
+// ========== 通过 Worker 验证防伪码 ==========
+async function verifyCodeViaWorker(code, productName) {
+    try {
+        const response = await fetch(`${WORKER_URL}/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                code: code,
+                product: productName || '未知商品'
+            })
+        });
+
+        const result = await response.json();
+        return result;
+    } catch (err) {
+        console.warn('验证请求失败:', err);
+        return { success: false, message: '验证服务不可用' };
+    }
+}
+
+// ========== 通过 Worker 记录（每日首次） ==========
+async function recordViaWorker(code, productName) {
     if (isTodayRecorded(code)) {
         console.log(`ℹ️ 防伪码 ${code} 今日已记录，跳过写入`);
         return;
@@ -174,7 +190,7 @@ async function writeVerifyLog(code, productName) {
     const timeStr = getTimeStr();
 
     try {
-        const response = await fetch(WORKER_URL, {
+        const response = await fetch(`${WORKER_URL}/record`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -189,15 +205,15 @@ async function writeVerifyLog(code, productName) {
             markTodayRecorded(code);
             console.log(`✅ 验证记录已写入: ${code} at ${timeStr}`);
         } else {
-            console.warn('⚠️ 写入失败:', result.error || '未知错误');
+            console.warn('⚠️ 记录失败:', result.error || '未知错误');
         }
     } catch (err) {
-        console.warn('⚠️ 记录写入异常（不影响验证）:', err);
+        console.warn('⚠️ 记录异常（不影响验证）:', err);
     }
 }
 
-// ========== 验证逻辑 ==========
-function verifyAntiFake() {
+// ========== 验证逻辑（改为调用 Worker） ==========
+async function verifyAntiFake() {
     if (!currentProduct || !verificationInput || !verificationResult) {
         console.warn('验证失败：当前商品为空或 DOM 元素缺失');
         return;
@@ -210,22 +226,25 @@ function verifyAntiFake() {
         return;
     }
 
-    const codes = currentProduct.antiFakeCodes || [];
-    const matched = codes.some(code => code === inputCode);
+    // 显示"验证中..."
+    verificationResult.textContent = '⏳ 验证中...';
+    verificationResult.style.color = '#6c63ff';
 
-    if (matched) {
-        verificationResult.textContent = '✅ 验证通过，该商品为正品！';
+    // 🔥 调用 Worker 验证（不再使用本地 antiFakeCodes）
+    const result = await verifyCodeViaWorker(inputCode, currentProduct.name);
+
+    if (result.success) {
+        verificationResult.textContent = '✅ ' + result.message;
         verificationResult.style.color = '#22c55e';
 
-        // 1. 写入记录（通过 Worker）
-        writeVerifyLog(inputCode, currentProduct.name);
+        // 验证通过后记录到 GitHub（每日首次）
+        await recordViaWorker(inputCode, currentProduct.name);
 
-        // 2. 读取并展示历史记录（通过 Worker）
-        fetchAllVerifyLogs().then(records => {
-            renderHistory(records, inputCode);
-        });
+        // 读取并展示历史记录
+        const records = await fetchAllVerifyLogs();
+        renderHistory(records, inputCode);
     } else {
-        verificationResult.textContent = '❌ 防伪码错误，请确认渠道！';
+        verificationResult.textContent = '❌ ' + result.message;
         verificationResult.style.color = '#ef4444';
         if (verifyHistory) verifyHistory.style.display = 'none';
     }

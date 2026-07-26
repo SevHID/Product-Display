@@ -3,7 +3,7 @@
  * 负责加载：
  *   1. 轮播图片列表（data/sources.txt）
  *   2. 所有商品数据（data/items/ 下的 TXT，通过 manifest.txt 索引）
- *   3. 每个商品对应的防伪码（data/verify/ 下的同名 TXT，不存在则静默忽略）
+ *   注意：防伪码已迁移到 Cloudflare Worker，不再从前端加载
  */
 
 export async function loadData() {
@@ -30,12 +30,8 @@ export async function loadData() {
             .map(line => line.trim())
             .filter(line => line.length > 0 && !line.startsWith('#'));
 
-        // ----- 3. 加载每个商品数据 + 对应的防伪码 -----
+        // ----- 3. 加载每个商品数据（不再加载防伪码） -----
         const productPromises = fileNames.map(async (fileName) => {
-            const baseName = fileName.replace(/\.txt$/i, ''); // 去除 .txt 后缀
-
-            // 3a. 加载商品数据
-            let product = null;
             try {
                 const itemRes = await fetch(`data/items/${fileName}`);
                 if (!itemRes.ok) {
@@ -43,41 +39,19 @@ export async function loadData() {
                     return null;
                 }
                 const itemText = await itemRes.text();
-                product = parseProductText(itemText);
+                const product = parseProductText(itemText);
                 if (!product) {
                     console.warn(`⚠️ 解析商品文件 ${fileName} 失败（缺少商品名称），跳过`);
                     return null;
                 }
+                return product;
             } catch (err) {
                 console.warn(`⚠️ 加载商品文件 ${fileName} 时发生错误:`, err);
                 return null;
             }
-
-            // 3b. 尝试加载对应的防伪码文件（静默降级）
-            let antiFakeCodes = [];
-            try {
-                const verifyRes = await fetch(`data/verify/${baseName}.txt`);
-                if (verifyRes.ok) {
-                    const verifyText = await verifyRes.text();
-                    antiFakeCodes = verifyText
-                        .split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line.length > 0);
-                }
-                // 如果文件不存在 (404)，静默忽略，antiFakeCodes 保持为空数组
-            } catch (err) {
-                // 网络错误或其他异常，也静默忽略
-            }
-
-            // 将防伪码数组挂载到商品对象上
-            product.antiFakeCodes = antiFakeCodes;
-
-            return product;
         });
 
-        // 等待所有商品加载完成，过滤掉 null
         const products = (await Promise.all(productPromises)).filter(p => p !== null);
-
         return { images, products };
     } catch (error) {
         console.error('❌ 数据加载失败:', error);
@@ -85,7 +59,7 @@ export async function loadData() {
     }
 }
 
-// ========== 解析单个商品 TXT ==========
+// ========== 解析单个商品 TXT（不含防伪码） ==========
 function parseProductText(text) {
     const lines = text
         .split('\n')
@@ -98,8 +72,7 @@ function parseProductText(text) {
         description: '',
         video: '',
         category: '',
-        price: '',
-        // antiFakeCodes 由外部加载，此处不解析
+        price: ''
     };
 
     for (const line of lines) {
