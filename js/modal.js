@@ -40,7 +40,7 @@ export function openModal(product) {
         }
     }
 
-    // 所有商品都显示验证区域（验证逻辑在 Worker 中，不依赖前端数据）
+    // 所有商品都显示验证区域
     if (verificationArea) {
         verificationArea.style.display = 'block';
         if (verificationInput) {
@@ -125,7 +125,7 @@ async function fetchAllVerifyLogs() {
     }
 }
 
-// ========== 展示历史记录（最早1条 + 最近3条） ==========
+// ========== 展示历史记录 ==========
 function renderHistory(records, targetCode) {
     if (!historyList || !verifyHistory) return;
 
@@ -161,14 +161,14 @@ function renderHistory(records, targetCode) {
 }
 
 // ========== 通过 Worker 验证防伪码 ==========
-async function verifyCodeViaWorker(code, productName) {
+async function verifyCodeViaWorker(code, productId) {
     try {
         const response = await fetch(`${WORKER_URL}/verify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 code: code,
-                product: productName || '未知商品'
+                product: productId   // 这里传递 productId（如 "product1"）
             })
         });
 
@@ -181,7 +181,7 @@ async function verifyCodeViaWorker(code, productName) {
 }
 
 // ========== 通过 Worker 记录（每日首次） ==========
-async function recordViaWorker(code, productName) {
+async function recordViaWorker(code, productId) {
     if (isTodayRecorded(code)) {
         console.log(`ℹ️ 防伪码 ${code} 今日已记录，跳过写入`);
         return;
@@ -196,7 +196,7 @@ async function recordViaWorker(code, productName) {
             body: JSON.stringify({
                 code: code,
                 time: timeStr,
-                product: productName || '未知商品'
+                product: productId   // 这里传递 productId
             })
         });
 
@@ -212,7 +212,7 @@ async function recordViaWorker(code, productName) {
     }
 }
 
-// ========== 验证逻辑（改为调用 Worker） ==========
+// ========== 验证逻辑 ==========
 async function verifyAntiFake() {
     if (!currentProduct || !verificationInput || !verificationResult) {
         console.warn('验证失败：当前商品为空或 DOM 元素缺失');
@@ -226,21 +226,18 @@ async function verifyAntiFake() {
         return;
     }
 
-    // 显示"验证中..."
     verificationResult.textContent = '⏳ 验证中...';
     verificationResult.style.color = '#6c63ff';
 
-    // 🔥 调用 Worker 验证（不再使用本地 antiFakeCodes）
-    const result = await verifyCodeViaWorker(inputCode, currentProduct.name);
+    // 🔥 关键修改：传递 product.id（如 "product1"）
+    const result = await verifyCodeViaWorker(inputCode, currentProduct.id);
 
     if (result.success) {
         verificationResult.textContent = '✅ ' + result.message;
         verificationResult.style.color = '#22c55e';
 
-        // 验证通过后记录到 GitHub（每日首次）
-        await recordViaWorker(inputCode, currentProduct.name);
+        await recordViaWorker(inputCode, currentProduct.id);
 
-        // 读取并展示历史记录
         const records = await fetchAllVerifyLogs();
         renderHistory(records, inputCode);
     } else {

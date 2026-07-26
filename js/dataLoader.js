@@ -32,6 +32,8 @@ export async function loadData() {
 
         // ----- 3. 加载每个商品数据（不再加载防伪码） -----
         const productPromises = fileNames.map(async (fileName) => {
+            // 提取文件名（不含 .txt）作为商品 ID
+            const baseName = fileName.replace(/\.txt$/i, '');
             try {
                 const itemRes = await fetch(`data/items/${fileName}`);
                 if (!itemRes.ok) {
@@ -44,6 +46,8 @@ export async function loadData() {
                     console.warn(`⚠️ 解析商品文件 ${fileName} 失败（缺少商品名称），跳过`);
                     return null;
                 }
+                // ✅ 增加 id 字段（用于防伪码验证，与 laws/ 中的文件名对应）
+                product.id = baseName;
                 return product;
             } catch (err) {
                 console.warn(`⚠️ 加载商品文件 ${fileName} 时发生错误:`, err);
