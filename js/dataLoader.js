@@ -6,7 +6,6 @@
  *   3. 每个商品对应的防伪码（data/verify/ 下的同名 TXT，不存在则静默忽略）
  */
 
-// ========== 主加载函数 ==========
 export async function loadData() {
     try {
         // ----- 1. 加载轮播图片 -----
@@ -64,13 +63,10 @@ export async function loadData() {
                         .split('\n')
                         .map(line => line.trim())
                         .filter(line => line.length > 0);
-                    // 可选：记录加载成功
-                    // console.log(`✅ 已加载 ${baseName} 的防伪码，共 ${antiFakeCodes.length} 个`);
                 }
                 // 如果文件不存在 (404)，静默忽略，antiFakeCodes 保持为空数组
             } catch (err) {
                 // 网络错误或其他异常，也静默忽略
-                // console.debug(`ℹ️ 未找到 ${baseName} 的防伪码文件，跳过`);
             }
 
             // 将防伪码数组挂载到商品对象上
@@ -82,11 +78,9 @@ export async function loadData() {
         // 等待所有商品加载完成，过滤掉 null
         const products = (await Promise.all(productPromises)).filter(p => p !== null);
 
-        // 返回最终数据
         return { images, products };
     } catch (error) {
         console.error('❌ 数据加载失败:', error);
-        // 向外抛出错误，由 app.js 捕获并提示用户
         throw error;
     }
 }
@@ -109,7 +103,6 @@ function parseProductText(text) {
     };
 
     for (const line of lines) {
-        // 只处理包含中文冒号的行
         if (line.includes('：')) {
             const [key, ...rest] = line.split('：');
             const value = rest.join('：').trim();
@@ -132,17 +125,12 @@ function parseProductText(text) {
                 case '价格':
                     data.price = value;
                     break;
-                // 其他字段（如防伪码）不再从商品文件中读取
                 default:
-                    // 忽略未知字段
                     break;
             }
         }
     }
 
-    // 商品名称是必须的，缺失则返回 null
-    if (!data.name) {
-        return null;
-    }
+    if (!data.name) return null;
     return data;
 }

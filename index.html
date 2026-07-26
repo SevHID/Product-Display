@@ -50,6 +50,26 @@
             <p id="modal-category" class="modal-category"></p>
             <p id="modal-description"></p>
             <a id="modal-video" href="#" target="_blank" class="modal-video-btn">▶ 观看介绍视频</a>
+
+            <!-- ========== 防伪验证区域 ========== -->
+            <div class="verification-area" id="verification-area" style="display:none; margin-top:20px; padding-top:18px; border-top:2px dashed var(--border-light);">
+                <p style="font-weight:600; margin-bottom:10px; color:var(--text-primary);">🔐 正品防伪验证</p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <input type="text" id="verification-input" placeholder="请输入防伪码"
+                           style="flex:2; min-width:180px; padding:10px 16px; border:2px solid var(--border-light); border-radius:var(--radius-full); font-size:14px; font-family:var(--font-family); outline:none; transition:all var(--transition-fast); background:var(--bg-body); color:var(--text-primary);">
+                    <button id="verification-btn" style="padding:10px 24px; border:none; border-radius:var(--radius-full); font-weight:600; font-size:14px; font-family:var(--font-family); cursor:pointer; transition:all var(--transition-fast); background:var(--primary); color:white; box-shadow:0 4px 12px rgba(108,99,255,0.3);">验证正品</button>
+                    <button id="verification-clear-btn" style="padding:10px 20px; border:none; border-radius:var(--radius-full); font-weight:500; font-size:14px; font-family:var(--font-family); cursor:pointer; transition:all var(--transition-fast); background:var(--border-light); color:var(--text-secondary);">清空</button>
+                </div>
+                <div id="verification-result" style="margin-top:12px; font-size:15px; font-weight:600; min-height:24px;"></div>
+
+                <!-- ===== 历史记录展示区域 ===== -->
+                <div id="verify-history" style="display:none; margin-top:15px; padding-top:12px; border-top:1px solid var(--border-light);">
+                    <p style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">📋 查询记录</p>
+                    <div id="history-list" style="font-size:13px; color:var(--text-secondary); line-height:1.8;"></div>
+                </div>
+                <!-- ===== 历史记录区域结束 ===== -->
+            </div>
+            <!-- ========== 防伪验证区域结束 ========== -->
         </div>
     </div>
 
