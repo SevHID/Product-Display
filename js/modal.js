@@ -17,7 +17,6 @@ const verifyHistory = document.getElementById('verify-history');
 const historyList = document.getElementById('history-list');
 
 // ========== Cloudflare Worker 配置 ==========
-// ⚠️ 替换为你的 Worker 地址
 const WORKER_URL = 'https://verify-log-writer.shikurei77.workers.dev';
 // ============================================
 
@@ -40,7 +39,6 @@ export function openModal(product) {
         }
     }
 
-    // 所有商品都显示验证区域
     if (verificationArea) {
         verificationArea.style.display = 'block';
         if (verificationInput) {
@@ -160,7 +158,7 @@ function renderHistory(records, targetCode) {
     verifyHistory.style.display = 'block';
 }
 
-// ========== 通过 Worker 验证防伪码 ==========
+// ========== 通过 Worker 验证防伪码（增强错误捕获） ==========
 async function verifyCodeViaWorker(code, productId) {
     try {
         const response = await fetch(`${WORKER_URL}/verify`, {
@@ -168,15 +166,32 @@ async function verifyCodeViaWorker(code, productId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 code: code,
-                product: productId   // 这里传递 productId（如 "product1"）
+                product: productId
             })
         });
+
+        // 如果不成功，读取响应文本以便调试
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.warn('Worker 返回错误:', response.status, errorText);
+            return {
+                success: false,
+                message: `验证服务返回错误 (${response.status})，请稍后重试`
+            };
+        }
 
         const result = await response.json();
         return result;
     } catch (err) {
-        console.warn('验证请求失败:', err);
-        return { success: false, message: '验证服务不可用' };
+        console.error('验证请求异常:', err);
+        // 提供更具体的错误信息
+        let errorMsg = '验证服务不可用';
+        if (err.message.includes('Failed to fetch')) {
+            errorMsg = '网络连接失败，请检查网络或尝试使用系统浏览器打开';
+        } else if (err.message) {
+            errorMsg = `请求异常: ${err.message}`;
+        }
+        return { success: false, message: errorMsg };
     }
 }
 
@@ -196,9 +211,14 @@ async function recordViaWorker(code, productId) {
             body: JSON.stringify({
                 code: code,
                 time: timeStr,
-                product: productId   // 这里传递 productId
+                product: productId
             })
         });
+
+        if (!response.ok) {
+            console.warn('记录请求失败:', response.status);
+            return;
+        }
 
         const result = await response.json();
         if (response.ok && result.success) {
@@ -229,7 +249,7 @@ async function verifyAntiFake() {
     verificationResult.textContent = '⏳ 验证中...';
     verificationResult.style.color = '#6c63ff';
 
-    // 🔥 关键修改：传递 product.id（如 "product1"）
+    // 调用 Worker 验证
     const result = await verifyCodeViaWorker(inputCode, currentProduct.id);
 
     if (result.success) {

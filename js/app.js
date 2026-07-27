@@ -165,54 +165,43 @@ const updateSuggestions = debounce(function(keyword) {
     });
 }, 250);
 
-// =====================================================
-// ====== 🆕 从 URL 参数自动打开商品并填入防伪码 ======
-// =====================================================
-function initFromUrl() {
+// ==========================================
+// 🆕 从 URL 读取防伪码并显示复制通知
+// ==========================================
+function showCodeFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    const productName = params.get('product');
     const code = params.get('code');
+    if (!code) return;
 
-    if (!productName || !code) return;   // 没有参数则不做任何事
+    const notice = document.getElementById('code-notice');
+    const display = document.getElementById('code-display');
+    const copyBtn = document.getElementById('copy-code-btn');
+    const closeBtn = document.getElementById('close-notice-btn');
 
-    // 解码（因为商品名称在 URL 中被 encodeURIComponent 编码过）
-    const decodedName = decodeURIComponent(productName).trim();
+    display.textContent = `防伪码：${code}`;
+    notice.style.display = 'block';
 
-    // 在所有商品中查找（忽略大小写）
-    const product = allProducts.find(p =>
-        p.name.trim().toLowerCase() === decodedName.toLowerCase()
-    );
-
-    if (!product) {
-        console.warn('未找到匹配的商品：', decodedName);
-        return;
-    }
-
-    // 1. 打开商品详情弹窗
-    openModal(product);
-
-    // 2. 等待模态框渲染完成后，自动填入防伪码
-    //    使用轮询检测输入框是否存在（因为模态框有动画，需要延时）
-    const fillCode = () => {
-        const input = document.getElementById('verification-input');
-        if (input) {
-            input.value = code;
-            // 触发 input 事件，让监听器（如果有）感知变化
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-
-            // 🟢 如需自动点击“验证正品”按钮，取消下面注释
-            // const verifyBtn = document.getElementById('verification-btn');
-            // if (verifyBtn) verifyBtn.click();
-
-            console.log(`✅ 已自动填入防伪码: ${code}`);
-        } else {
-            // 如果还没渲染出来，再试一次
-            setTimeout(fillCode, 200);
+    copyBtn.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(code);
+            copyBtn.textContent = '已复制!';
+            setTimeout(() => copyBtn.textContent = '复制', 2000);
+        } catch (err) {
+            // 降级方案（兼容旧浏览器）
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            copyBtn.textContent = '已复制!';
+            setTimeout(() => copyBtn.textContent = '复制', 2000);
         }
-    };
+    });
 
-    // 首次等待 500ms（给模态框动画留时间），然后开始填充
-    setTimeout(fillCode, 500);
+    closeBtn.addEventListener('click', () => {
+        notice.style.display = 'none';
+    });
 }
 
 // ====== 初始化应用 ======
@@ -282,10 +271,8 @@ async function initApp() {
 
         bindModalEvents();
 
-        // =============================================================
-        // 🆕 数据加载完成后，检查 URL 参数并执行自动打开 + 填码
-        // =============================================================
-        initFromUrl();
+        // ====== 页面加载后检查 URL 参数并显示防伪码通知 ======
+        setTimeout(showCodeFromUrl, 300); // 延迟确保 DOM 完全渲染
 
     } catch (error) {
         alert('数据加载失败，请确保通过 Live Server 或 GitHub Pages 访问。\n' + error.message);
