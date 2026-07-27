@@ -11,12 +11,15 @@
 </head>
 <body>
 
-    <!-- ===== 防伪码通知条（从 URL 读取） ===== -->
+    <!-- ===== 防伪码通知条 ===== -->
     <div id="code-notice" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#6c63ff; color:white; padding:16px 24px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:9999; font-size:16px; max-width:90%; text-align:center; font-family:system-ui, -apple-system, sans-serif;">
         <span id="code-display"></span>
         <button id="copy-code-btn" style="margin-left:16px; background:white; color:#6c63ff; border:none; border-radius:8px; padding:6px 16px; font-weight:bold; cursor:pointer;">复制</button>
         <button id="close-notice-btn" style="margin-left:8px; background:transparent; color:white; border:1px solid white; border-radius:8px; padding:6px 12px; cursor:pointer;">×</button>
     </div>
+
+    <!-- ===== 调试信息（仅供开发测试，可删除） ===== -->
+    <div id="debug-info" style="position:fixed; bottom:10px; left:10px; background:rgba(0,0,0,0.7); color:#0f0; padding:8px 12px; border-radius:6px; font-size:12px; z-index:99999; display:none;"></div>
 
     <!-- 轮播区域 -->
     <section id="carousel-container"></section>
@@ -49,7 +52,7 @@
         <p id="load-more-info"></p>
     </div>
 
-    <!-- ===== 商品详情弹窗 (Modal) ===== -->
+    <!-- ===== 商品详情弹窗 ===== -->
     <div id="modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close" id="modal-close">&times;</button>
@@ -59,7 +62,7 @@
             <p id="modal-description"></p>
             <a id="modal-video" href="#" target="_blank" class="modal-video-btn">▶ 观看介绍视频</a>
 
-            <!-- ========== 防伪验证区域 ========== -->
+            <!-- 防伪验证区域 -->
             <div class="verification-area" id="verification-area" style="display:none; margin-top:20px; padding-top:18px; border-top:2px dashed var(--border-light);">
                 <p style="font-weight:600; margin-bottom:10px; color:var(--text-primary);">🔐 正品防伪验证</p>
                 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -69,8 +72,6 @@
                     <button id="verification-clear-btn" style="padding:10px 20px; border:none; border-radius:var(--radius-full); font-weight:500; font-size:14px; font-family:var(--font-family); cursor:pointer; transition:all var(--transition-fast); background:var(--border-light); color:var(--text-secondary);">清空</button>
                 </div>
                 <div id="verification-result" style="margin-top:12px; font-size:15px; font-weight:600; min-height:24px;"></div>
-
-                <!-- ===== 历史记录展示区域 ===== -->
                 <div id="verify-history" style="display:none; margin-top:15px; padding-top:12px; border-top:1px solid var(--border-light);">
                     <p style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">📋 查询记录</p>
                     <div id="history-list" style="font-size:13px; color:var(--text-secondary); line-height:1.8;"></div>
@@ -81,20 +82,51 @@
 
     <script type="module" src="js/app.js"></script>
 
-    <!-- ===== 独立防伪码通知条脚本（不依赖 app.js） ===== -->
+    <!-- ===== 独立防伪码通知条脚本（兼容微信） ===== -->
     <script>
         (function() {
-            // 从 URL 获取 code 参数
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
+            // ============================================================
+            // 1. 超强参数提取：直接从完整 URL 正则匹配（绕过微信的 search 问题）
+            // ============================================================
+            function getCodeFromUrl() {
+                try {
+                    const href = window.location.href;
+                    const match = href.match(/[?&]code=([^&]+)/);
+                    if (match) {
+                        return decodeURIComponent(match[1]);
+                    }
+                    // 备选：使用 URLSearchParams（标准方式）
+                    const params = new URLSearchParams(window.location.search);
+                    return params.get('code');
+                } catch (e) {
+                    console.warn('提取 code 参数失败:', e);
+                    return null;
+                }
+            }
+
+            const code = getCodeFromUrl();
             console.log('🔍 检测到 code 参数:', code);
+
+            // 显示调试信息（方便手机查看）
+            const debugEl = document.getElementById('debug-info');
+            if (debugEl) {
+                debugEl.textContent = code ? '✅ 已读取 code: ' + code : '❌ 未检测到 code';
+                debugEl.style.display = 'block';
+                // 5秒后自动隐藏
+                setTimeout(function() {
+                    debugEl.style.display = 'none';
+                }, 8000);
+            }
 
             if (!code) {
                 console.log('ℹ️ 未检测到 code 参数，不显示通知条。');
+                // 可选：显示一个提示，让用户手动输入
                 return;
             }
 
-            // 等待 DOM 加载完成
+            // ============================================================
+            // 2. 显示通知条
+            // ============================================================
             function showNotice() {
                 const notice = document.getElementById('code-notice');
                 const display = document.getElementById('code-display');
@@ -102,7 +134,7 @@
                 const closeBtn = document.getElementById('close-notice-btn');
 
                 if (!notice || !display || !copyBtn || !closeBtn) {
-                    console.warn('⚠️ 找不到通知条 DOM 元素，请确认 index.html 中包含该结构。');
+                    console.warn('⚠️ 找不到通知条 DOM 元素');
                     return;
                 }
 
@@ -110,28 +142,37 @@
                 notice.style.display = 'block';
                 console.log('✅ 通知条已显示');
 
-                // 复制按钮
+                // ---------- 复制功能 ----------
                 copyBtn.addEventListener('click', async function() {
+                    // 优先使用 navigator.clipboard（HTTPS 环境）
                     try {
                         await navigator.clipboard.writeText(code);
                         copyBtn.textContent = '已复制!';
                         setTimeout(() => copyBtn.textContent = '复制', 2000);
-                    } catch (err) {
-                        // 降级方案（兼容移动端微信等）
+                        return;
+                    } catch (clipErr) {
+                        console.warn('clipboard API 失败，尝试降级方案', clipErr);
+                    }
+
+                    // 降级方案：使用 execCommand（兼容微信等）
+                    try {
                         const textarea = document.createElement('textarea');
                         textarea.value = code;
                         textarea.style.position = 'fixed';
                         textarea.style.left = '-9999px';
                         document.body.appendChild(textarea);
                         textarea.select();
-                        try {
-                            document.execCommand('copy');
+                        const success = document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        if (success) {
                             copyBtn.textContent = '已复制!';
                             setTimeout(() => copyBtn.textContent = '复制', 2000);
-                        } catch (e) {
-                            alert('复制失败，请手动复制：' + code);
+                        } else {
+                            alert('复制失败，请长按上方防伪码手动复制');
                         }
-                        document.body.removeChild(textarea);
+                    } catch (execErr) {
+                        console.error('execCommand 也失败:', execErr);
+                        alert('复制失败，请长按上方防伪码手动复制');
                     }
                 });
 
