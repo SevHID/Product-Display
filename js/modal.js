@@ -17,7 +17,7 @@ const verifyHistory = document.getElementById('verify-history');
 const historyList = document.getElementById('history-list');
 
 // ========== Cloudflare Worker 配置 ==========
-const WORKER_URL = 'https://verify-log-writer.shikurei77.workers.dev';
+const WORKER_URL = 'https://verify.kamakuralolita.xyz';
 // ============================================
 
 // ========== 弹窗控制 ==========
