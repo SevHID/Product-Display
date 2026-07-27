@@ -53,7 +53,6 @@ function updateCategorySelect(products) {
         opt.textContent = cat || '全部分类';
         categorySelect.appendChild(opt);
     });
-    // 恢复选中值
     if (currentVal && categories.includes(currentVal)) {
         categorySelect.value = currentVal;
     }
@@ -67,7 +66,6 @@ function sortProducts(products, sortType) {
     } else if (sortType === 'name_desc') {
         arr.sort((a, b) => b.name.localeCompare(a.name, 'zh-Hans-CN'));
     }
-    // 'default' 不排序，保持原顺序
     return arr;
 }
 
@@ -79,17 +77,14 @@ function filterAndSort() {
 
     let result = allProducts;
 
-    // 1. 关键词筛选
     if (keyword !== '') {
         result = filterProducts(allProducts, keyword);
     }
 
-    // 2. 分类筛选
     if (category !== '') {
         result = result.filter(p => p.category === category);
     }
 
-    // 3. 排序
     result = sortProducts(result, sortType);
 
     currentFiltered = result;
@@ -170,6 +165,56 @@ const updateSuggestions = debounce(function(keyword) {
     });
 }, 250);
 
+// =====================================================
+// ====== 🆕 从 URL 参数自动打开商品并填入防伪码 ======
+// =====================================================
+function initFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const productName = params.get('product');
+    const code = params.get('code');
+
+    if (!productName || !code) return;   // 没有参数则不做任何事
+
+    // 解码（因为商品名称在 URL 中被 encodeURIComponent 编码过）
+    const decodedName = decodeURIComponent(productName).trim();
+
+    // 在所有商品中查找（忽略大小写）
+    const product = allProducts.find(p =>
+        p.name.trim().toLowerCase() === decodedName.toLowerCase()
+    );
+
+    if (!product) {
+        console.warn('未找到匹配的商品：', decodedName);
+        return;
+    }
+
+    // 1. 打开商品详情弹窗
+    openModal(product);
+
+    // 2. 等待模态框渲染完成后，自动填入防伪码
+    //    使用轮询检测输入框是否存在（因为模态框有动画，需要延时）
+    const fillCode = () => {
+        const input = document.getElementById('verification-input');
+        if (input) {
+            input.value = code;
+            // 触发 input 事件，让监听器（如果有）感知变化
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+
+            // 🟢 如需自动点击“验证正品”按钮，取消下面注释
+            // const verifyBtn = document.getElementById('verification-btn');
+            // if (verifyBtn) verifyBtn.click();
+
+            console.log(`✅ 已自动填入防伪码: ${code}`);
+        } else {
+            // 如果还没渲染出来，再试一次
+            setTimeout(fillCode, 200);
+        }
+    };
+
+    // 首次等待 500ms（给模态框动画留时间），然后开始填充
+    setTimeout(fillCode, 500);
+}
+
 // ====== 初始化应用 ======
 async function initApp() {
     try {
@@ -179,15 +224,12 @@ async function initApp() {
 
         initCarousel(data.images, '#carousel-container');
 
-        // 更新分类下拉框
         updateCategorySelect(allProducts);
 
-        // 首次渲染
         renderPage();
         searchTip.textContent = `共 ${allProducts.length} 件商品`;
 
-        // ====== 事件绑定 ======
-        // 搜索输入（实时 + 防抖）
+        // ====== 事件绑定（原有） ======
         searchInput.addEventListener('input', function() {
             const keyword = this.value.trim();
             if (keyword === '') {
@@ -198,13 +240,11 @@ async function initApp() {
             updateSuggestions(keyword);
         });
 
-        // 搜索按钮
         searchBtn.addEventListener('click', function() {
             suggestionsBox.style.display = 'none';
             filterAndSort();
         });
 
-        // 回车键
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
                 suggestionsBox.style.display = 'none';
@@ -212,7 +252,6 @@ async function initApp() {
             }
         });
 
-        // 清空按钮
         clearBtn.addEventListener('click', () => {
             searchInput.value = '';
             suggestionsBox.style.display = 'none';
@@ -221,32 +260,32 @@ async function initApp() {
             filterAndSort();
         });
 
-        // 分类切换
         categorySelect.addEventListener('change', () => {
             suggestionsBox.style.display = 'none';
             filterAndSort();
         });
 
-        // 排序切换
         sortSelect.addEventListener('change', () => {
             filterAndSort();
         });
 
-        // 加载更多
         loadMoreBtn.addEventListener('click', function() {
             currentPage++;
             renderPage(true);
         });
 
-        // 点击页面其他地方关闭下拉框
         document.addEventListener('click', function(e) {
             if (!document.getElementById('search-section').contains(e.target)) {
                 suggestionsBox.style.display = 'none';
             }
         });
 
-        // 绑定弹窗事件
         bindModalEvents();
+
+        // =============================================================
+        // 🆕 数据加载完成后，检查 URL 参数并执行自动打开 + 填码
+        // =============================================================
+        initFromUrl();
 
     } catch (error) {
         alert('数据加载失败，请确保通过 Live Server 或 GitHub Pages 访问。\n' + error.message);
