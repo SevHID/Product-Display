@@ -80,5 +80,74 @@
     </div>
 
     <script type="module" src="js/app.js"></script>
+
+    <!-- ===== 独立防伪码通知条脚本（不依赖 app.js） ===== -->
+    <script>
+        (function() {
+            // 从 URL 获取 code 参数
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            console.log('🔍 检测到 code 参数:', code);
+
+            if (!code) {
+                console.log('ℹ️ 未检测到 code 参数，不显示通知条。');
+                return;
+            }
+
+            // 等待 DOM 加载完成
+            function showNotice() {
+                const notice = document.getElementById('code-notice');
+                const display = document.getElementById('code-display');
+                const copyBtn = document.getElementById('copy-code-btn');
+                const closeBtn = document.getElementById('close-notice-btn');
+
+                if (!notice || !display || !copyBtn || !closeBtn) {
+                    console.warn('⚠️ 找不到通知条 DOM 元素，请确认 index.html 中包含该结构。');
+                    return;
+                }
+
+                display.textContent = '防伪码：' + code;
+                notice.style.display = 'block';
+                console.log('✅ 通知条已显示');
+
+                // 复制按钮
+                copyBtn.addEventListener('click', async function() {
+                    try {
+                        await navigator.clipboard.writeText(code);
+                        copyBtn.textContent = '已复制!';
+                        setTimeout(() => copyBtn.textContent = '复制', 2000);
+                    } catch (err) {
+                        // 降级方案（兼容移动端微信等）
+                        const textarea = document.createElement('textarea');
+                        textarea.value = code;
+                        textarea.style.position = 'fixed';
+                        textarea.style.left = '-9999px';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                            document.execCommand('copy');
+                            copyBtn.textContent = '已复制!';
+                            setTimeout(() => copyBtn.textContent = '复制', 2000);
+                        } catch (e) {
+                            alert('复制失败，请手动复制：' + code);
+                        }
+                        document.body.removeChild(textarea);
+                    }
+                });
+
+                // 关闭按钮
+                closeBtn.addEventListener('click', function() {
+                    notice.style.display = 'none';
+                });
+            }
+
+            // 确保 DOM 已加载
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', showNotice);
+            } else {
+                showNotice();
+            }
+        })();
+    </script>
 </body>
 </html>
