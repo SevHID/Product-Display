@@ -8,6 +8,24 @@
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
     <title>商品预览</title>
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- ===== 自动跳转到新域名 kamakuralolita.xyz ===== -->
+    <script>
+        // 检测当前是否在旧域名 sevhid.github.io 下访问
+        if (window.location.hostname === 'sevhid.github.io') {
+            // 获取当前路径（移除 /Product-Display 前缀）
+            let path = window.location.pathname;
+            if (path.startsWith('/Product-Display')) {
+                path = path.replace(/^\/Product-Display/, '') || '/';
+            } else {
+                path = path || '/';
+            }
+            const search = window.location.search || '';
+            // 跳转到新域名
+            window.location.href = 'https://kamakuralolita.xyz' + path + search;
+        }
+    </script>
+    <!-- ===== 跳转脚本结束 ===== -->
 </head>
 <body>
 
@@ -120,7 +138,6 @@
 
             if (!code) {
                 console.log('ℹ️ 未检测到 code 参数，不显示通知条。');
-                // 可选：显示一个提示，让用户手动输入
                 return;
             }
 
