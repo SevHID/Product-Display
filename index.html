@@ -10,6 +10,14 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+    <!-- ===== 防伪码通知条（从 URL 读取） ===== -->
+    <div id="code-notice" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#6c63ff; color:white; padding:16px 24px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:9999; font-size:16px; max-width:90%; text-align:center; font-family:system-ui, -apple-system, sans-serif;">
+        <span id="code-display"></span>
+        <button id="copy-code-btn" style="margin-left:16px; background:white; color:#6c63ff; border:none; border-radius:8px; padding:6px 16px; font-weight:bold; cursor:pointer;">复制</button>
+        <button id="close-notice-btn" style="margin-left:8px; background:transparent; color:white; border:1px solid white; border-radius:8px; padding:6px 12px; cursor:pointer;">×</button>
+    </div>
+
     <!-- 轮播区域 -->
     <section id="carousel-container"></section>
 
@@ -67,9 +75,7 @@
                     <p style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">📋 查询记录</p>
                     <div id="history-list" style="font-size:13px; color:var(--text-secondary); line-height:1.8;"></div>
                 </div>
-                <!-- ===== 历史记录区域结束 ===== -->
             </div>
-            <!-- ========== 防伪验证区域结束 ========== -->
         </div>
     </div>
 
